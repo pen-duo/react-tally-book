@@ -1,7 +1,8 @@
 import { animated, useTransition } from '@react-spring/web'
-import { type ReactNode, useRef } from 'react'
-import { Link, useLocation, useOutlet } from 'react-router-dom'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate, useOutlet } from 'react-router-dom'
 import logo from '../../assets/images/logo.svg'
+import { useSwiper } from '../../hooks/useSwiper'
 import Styles from './index.module.scss'
 
 const linkMap = {
@@ -11,6 +12,7 @@ const linkMap = {
   '/welcome/4': '/welcome/xxx',
 }
 export const WelcomeLayout: React.FC = () => {
+  const animating = useRef(false)
   const location = useLocation() // 获取当前地址栏的信息
   const outlet = useOutlet()
   const map = useRef<Record<string, ReactNode>>({})
@@ -23,7 +25,21 @@ export const WelcomeLayout: React.FC = () => {
     // 退出状态
     leave: { transform: 'translateX(-100%)' },
     config: { duration: 300 },
+    onRest: () => {
+      animating.current = false
+    },
   })
+  const main = useRef<HTMLElement>(null)
+  const { direction } = useSwiper(main)
+  const nav = useNavigate()
+  useEffect(() => {
+    if (direction === 'left') {
+      if (animating.current)
+        return
+      animating.current = true
+      nav(linkMap[location.pathname])
+    }
+  }, [direction, location.pathname, linkMap])
   return transitions((style, pathname) => {
     return (
       <div className={Styles.wrapper}>
@@ -32,7 +48,7 @@ export const WelcomeLayout: React.FC = () => {
           <img className={Styles['wrapper__header--logo']} src={logo} />
           <h1 className={Styles['wrapper__header--title']}>山竹记账</h1>
         </header>
-        <main>
+        <main ref={main}>
           <animated.div key={pathname} style={style}>
             {map.current[pathname]}
           </animated.div>
